@@ -31,9 +31,10 @@ jobs:
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/.android/sdk}}"
           mkdir -p "$SDK"
           yes | sdkmanager --sdk_root="$SDK" --licenses >/dev/null || true
+          # NDK/cmake not required for prebuilt android_debug.apk template export
           sdkmanager --sdk_root="$SDK" \
             "platform-tools" "platforms;android-34" "build-tools;34.0.0" \
-            "cmdline-tools;latest" "cmake;3.10.2.4988404" "ndk;23.2.8568313"
+            "cmdline-tools;latest"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
 

@@ -1,27 +1,26 @@
 extends CharacterBody3D
-## Simple aggressive enemy for Neon Beat arena.
+## Enemy with optional AnimationPlayer clips (Kenney) or static mesh (MMA/Arthur/Boss).
 
 @export var max_health: int = 60
-@export var move_speed: float = 4.5
+@export var move_speed: float = 4.2
 @export var attack_damage: int = 12
-@export var attack_range: float = 1.8
-@export var attack_cooldown: float = 1.1
-@export var aggro_range: float = 18.0
+@export var attack_range: float = 1.9
+@export var attack_cooldown: float = 1.2
+@export var aggro_range: float = 20.0
 
 var health: int
 var _attack_cd: float = 0.0
 var _player: Node3D
 var _dead: bool = false
+var anim_player: AnimationPlayer
 
 @onready var model_root: Node3D = $ModelRoot
-@onready var anim_player: AnimationPlayer = $ModelRoot/AnimationPlayer if has_node("ModelRoot/AnimationPlayer") else null
-@onready var hit_area: Area3D = $Hurtbox
 
 func _ready() -> void:
 	health = max_health
 	add_to_group("enemies")
-	if hit_area:
-		hit_area.monitoring = true
+	anim_player = AnimUtil.find_animation_player(model_root)
+	_play(["idle", "Idle", "static", "Kung Fu idle guard"])
 
 func set_player(p: Node3D) -> void:
 	_player = p
@@ -38,14 +37,14 @@ func _physics_process(delta: float) -> void:
 	if dist > aggro_range:
 		velocity.x = 0.0
 		velocity.z = 0.0
-		_play("Idle")
+		_play(["idle", "Idle", "static"])
 	elif dist > attack_range:
 		var dir := to_player.normalized()
 		velocity.x = dir.x * move_speed
 		velocity.z = dir.z * move_speed
 		if model_root:
 			model_root.rotation.y = atan2(dir.x, dir.z)
-		_play("Walk")
+		_play(["walk", "Walk", "sprint"])
 	else:
 		velocity.x = 0.0
 		velocity.z = 0.0
@@ -57,39 +56,29 @@ func _physics_process(delta: float) -> void:
 	move_and_slide()
 
 func _do_attack() -> void:
-	_play("Attack")
+	_play(["attack-melee-right", "attack-kick-right", "Attack", "Kung Fu sexy punch"])
 	if _player and _player.has_method("take_hit"):
-		if global_position.distance_to(_player.global_position) <= attack_range + 0.4:
+		if global_position.distance_to(_player.global_position) <= attack_range + 0.5:
 			_player.take_hit(attack_damage)
 
 func take_hit(amount: int) -> void:
 	if _dead:
 		return
 	health -= amount
-	_play("Hit")
-	# Knockback
+	_play(["die", "Hit", "hit"])
 	if _player:
 		var away := (global_position - _player.global_position).normalized()
-		velocity += away * 6.0
+		velocity += away * 5.5
 	if health <= 0:
 		_die()
 
 func _die() -> void:
 	_dead = true
-	_play("Death")
+	_play(["die", "Death", "death"])
 	GameState.add_score(250, 1.0)
 	GameState.add_combo()
-	# Remove after short delay
-	await get_tree().create_timer(1.2).timeout
+	await get_tree().create_timer(1.4).timeout
 	queue_free()
 
-func _play(name: String) -> void:
-	if anim_player == null:
-		return
-	if anim_player.has_animation(name):
-		anim_player.play(name)
-	else:
-		for alt in [name.to_lower(), "idle", "Idle"]:
-			if anim_player.has_animation(alt):
-				anim_player.play(alt)
-				return
+func _play(candidates: Array) -> void:
+	AnimUtil.play_fuzzy(anim_player, candidates, true)

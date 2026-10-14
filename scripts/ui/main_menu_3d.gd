@@ -1,5 +1,5 @@
 extends Control
-## Cinematic neon main menu with 3D character showcase.
+## Main menu — Michael Jackson static showcase + PLAY into Geonosis arena.
 
 @onready var play_btn: Button = $UI/VBox/Play
 @onready var settings_btn: Button = $UI/VBox/Settings
@@ -22,17 +22,14 @@ func _ready() -> void:
 		title.text = "NEON BEAT"
 	if subtitle:
 		subtitle.text = "RHYTHM ACTION COMBAT"
-	# Soft ambient
-	if AudioManager.has_method("play_menu_music"):
-		AudioManager.play_menu_music()
 
 func _process(delta: float) -> void:
 	_t += delta
 	if char_pivot:
-		char_pivot.rotation.y = _t * 0.35
+		char_pivot.rotation.y = _t * 0.25
 	if camera:
-		camera.position.x = sin(_t * 0.25) * 0.4
-		camera.position.y = 1.6 + sin(_t * 0.4) * 0.08
+		camera.position.x = sin(_t * 0.2) * 0.35
+		camera.position.y = 1.7 + sin(_t * 0.35) * 0.06
 
 func _on_play() -> void:
 	get_tree().change_scene_to_file("res://scenes/gameplay/arena_3d.tscn")

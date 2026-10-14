@@ -1,31 +1,29 @@
-[gd_scene load_steps=8 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/main_menu_3d.gd" id="1"]
-[ext_resource type="PackedScene" path="res://assets/3d/kenney_mini_arena/character-soldier.glb" id="2"]
-[ext_resource type="PackedScene" path="res://assets/3d/kenney_mini_arena/column.glb" id="3"]
-[ext_resource type="PackedScene" path="res://assets/3d/kenney_mini_arena/statue.glb" id="4"]
+[ext_resource type="PackedScene" path="res://assets/characters/player/models/michael__jackson_thriller.glb" id="2"]
 
 [sub_resource type="Environment" id="Env"]
 background_mode = 1
-background_color = Color(0.03, 0.01, 0.08, 1)
-ambient_light_color = Color(0.2, 0.15, 0.35, 1)
-ambient_light_energy = 0.7
+background_color = Color(0.02, 0.01, 0.05, 1)
+ambient_light_color = Color(0.25, 0.15, 0.35, 1)
+ambient_light_energy = 0.8
 glow_enabled = true
-glow_intensity = 0.6
-glow_bloom = 0.35
+glow_intensity = 0.55
+glow_bloom = 0.3
 
 [sub_resource type="StandardMaterial3D" id="PlatformMat"]
-albedo_color = Color(0.08, 0.04, 0.15, 1)
+albedo_color = Color(0.06, 0.03, 0.12, 1)
 emission_enabled = true
-emission = Color(0.4, 0.1, 0.8, 1)
-emission_energy_multiplier = 0.5
-metallic = 0.3
-roughness = 0.4
+emission = Color(0.5, 0.1, 0.9, 1)
+emission_energy_multiplier = 0.45
+metallic = 0.4
+roughness = 0.35
 
 [sub_resource type="CylinderMesh" id="PlatformMesh"]
-top_radius = 1.8
-bottom_radius = 2.0
-height = 0.25
+top_radius = 1.6
+bottom_radius = 1.9
+height = 0.2
 
 [node name="MainMenu3D" type="Control"]
 layout_mode = 3
@@ -42,21 +40,21 @@ script = ExtResource("1")
 environment = SubResource("Env")
 
 [node name="Camera3D" type="Camera3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 0.98, 0.2, 0, -0.2, 0.98, 0, 1.8, 4.5)
+transform = Transform3D(1, 0, 0, 0, 0.98, 0.2, 0, -0.2, 0.98, 0, 1.8, 5.5)
 current = true
-fov = 45.0
+fov = 42.0
 
 [node name="KeyLight" type="OmniLight3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.5, 3, 2)
-light_color = Color(0.4, 0.9, 1, 1)
-light_energy = 2.0
-omni_range = 12.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 1.8, 3.2, 2.5)
+light_color = Color(0.5, 0.9, 1, 1)
+light_energy = 2.2
+omni_range = 14.0
 
 [node name="FillLight" type="OmniLight3D" parent="World"]
-transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2, 2, 1)
-light_color = Color(1, 0.3, 0.8, 1)
-light_energy = 1.2
-omni_range = 10.0
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -2.2, 2.2, 1.2)
+light_color = Color(1, 0.25, 0.7, 1)
+light_energy = 1.4
+omni_range = 12.0
 
 [node name="CharPivot" type="Node3D" parent="World"]
 
@@ -64,32 +62,21 @@ omni_range = 10.0
 mesh = SubResource("PlatformMesh")
 surface_material_override/0 = SubResource("PlatformMat")
 
-[node name="Soldier" parent="World/CharPivot" instance=ExtResource("2")]
-transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 0, 0.12, 0)
-
-[node name="ColL" parent="World" instance=ExtResource("3")]
-transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, -3.5, 0, -1)
-
-[node name="ColR" parent="World" instance=ExtResource("3")]
-transform = Transform3D(1.5, 0, 0, 0, 1.5, 0, 0, 0, 1.5, 3.5, 0, -1)
-
-[node name="Statue" parent="World" instance=ExtResource("4")]
-transform = Transform3D(1.2, 0, 0, 0, 1.2, 0, 0, 0, 1.2, 0, 0, -3)
+[node name="MJ" parent="World/CharPivot" instance=ExtResource("2")]
+transform = Transform3D(0.012, 0, 0, 0, 0.012, 0, 0, 0, 0.012, 0, 0.1, 0)
 
 [node name="UI" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
 
 [node name="Dim" type="ColorRect" parent="UI"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-color = Color(0, 0, 0, 0.35)
+color = Color(0, 0, 0, 0.28)
 
 [node name="Title" type="Label" parent="UI"]
 layout_mode = 1
@@ -97,14 +84,11 @@ anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -280.0
-offset_top = 40.0
+offset_top = 36.0
 offset_right = 280.0
-offset_bottom = 120.0
-theme_override_colors/font_color = Color(0.3, 1, 1, 1)
-theme_override_colors/font_shadow_color = Color(0.8, 0.1, 1, 0.6)
-theme_override_constants/shadow_offset_x = 0
-theme_override_constants/shadow_offset_y = 0
-theme_override_font_sizes/font_size = 64
+offset_bottom = 110.0
+theme_override_colors/font_color = Color(0.35, 1, 1, 1)
+theme_override_font_sizes/font_size = 60
 text = "NEON BEAT"
 horizontal_alignment = 1
 
@@ -114,11 +98,11 @@ anchors_preset = 5
 anchor_left = 0.5
 anchor_right = 0.5
 offset_left = -220.0
-offset_top = 110.0
+offset_top = 105.0
 offset_right = 220.0
-offset_bottom = 150.0
-theme_override_colors/font_color = Color(1, 0.5, 0.9, 1)
-theme_override_font_sizes/font_size = 20
+offset_bottom = 140.0
+theme_override_colors/font_color = Color(1, 0.45, 0.85, 1)
+theme_override_font_sizes/font_size = 18
 text = "RHYTHM ACTION COMBAT"
 horizontal_alignment = 1
 
@@ -130,10 +114,10 @@ anchor_top = 1.0
 anchor_right = 0.5
 anchor_bottom = 1.0
 offset_left = -140.0
-offset_top = -220.0
+offset_top = -210.0
 offset_right = 140.0
-offset_bottom = -40.0
-theme_override_constants/separation = 14
+offset_bottom = -36.0
+theme_override_constants/separation = 12
 
 [node name="Play" type="Button" parent="UI/VBox"]
 custom_minimum_size = Vector2(0, 52)
@@ -142,13 +126,13 @@ theme_override_font_sizes/font_size = 24
 text = "PLAY"
 
 [node name="Settings" type="Button" parent="UI/VBox"]
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "SETTINGS"
 
 [node name="Quit" type="Button" parent="UI/VBox"]
-custom_minimum_size = Vector2(0, 48)
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "QUIT"

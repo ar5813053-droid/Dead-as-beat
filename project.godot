@@ -91,10 +91,10 @@ ui_cancel={
 
 renderer/rendering_method="mobile"
 textures/canvas_textures/default_texture_filter=0
-# Required for Android export on x86_64 Linux CI (otherwise blank "configuration errors")
 textures/vram_compression/import_etc2_astc=true
 textures/vram_compression/import_s3tc_bptc=true
 environment/defaults/default_clear_color=Color(0.05, 0.02, 0.1, 1)
+
 
 [android]
 

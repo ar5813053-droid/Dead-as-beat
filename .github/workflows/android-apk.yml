@@ -67,6 +67,8 @@ jobs:
           set -euo pipefail
           mkdir -p builds
           grep -q 'import_etc2_astc=true' project.godot
+          echo "--- project.godot rendering ---"
+          grep -A8 '\[rendering\]' project.godot || true
           GODOT_BIN=$(command -v godot || command -v Godot || true)
           if [ -z "$GODOT_BIN" ]; then
             GODOT_BIN=$(find /usr /opt /root -name 'Godot*' -type f 2>/dev/null | head -1 || true)
@@ -74,6 +76,7 @@ jobs:
           echo "Using Godot: $GODOT_BIN"
           "$GODOT_BIN" --version || true
           "$GODOT_BIN" --headless --path . --import || true
+          "$GODOT_BIN" --headless --path . --script tools/print_etc2.gd || true
           SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/lib/android-sdk}}"
           JAVA="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"
           mkdir -p ~/.config/godot

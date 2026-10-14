@@ -106,7 +106,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: NeonBeat-debug-apk
+          name: NeonBeat-Android-APK
           path: builds/NeonBeat-debug.apk
           if-no-files-found: error
           retention-days: 14

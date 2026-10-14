@@ -23,38 +23,44 @@ jobs:
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v4
-        with:
-          packages: 'platform-tools platforms;android-34 build-tools;34.0.0 cmake;3.10.2.4988404 ndk;23.2.8568313'
 
-      - name: Download Godot 4.3
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$HOME/godot"
-          cd "$HOME/godot"
-          curl -fL -o godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
-          unzip -oq godot.zip
-          chmod +x Godot_v4.3-stable_linux.x86_64
-
-      - name: Install matching export templates
-        shell: bash
-        run: |
-          set -euo pipefail
-          cd "$HOME/godot"
-          curl -fL -o templates.tpz https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
-          mkdir -p /tmp/godot-templates
-          unzip -oq templates.tpz -d /tmp/godot-templates
-          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
-          cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.3.stable/"
-
-      - name: Configure Android paths
+      - name: Install Android SDK packages
         shell: bash
         run: |
           set -euo pipefail
           SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/.android/sdk}}"
+          mkdir -p "$SDK"
+          yes | sdkmanager --sdk_root="$SDK" --licenses >/dev/null || true
+          sdkmanager --sdk_root="$SDK" \
+            "platform-tools" "platforms;android-34" "build-tools;34.0.0" \
+            "cmdline-tools;latest" "cmake;3.10.2.4988404" "ndk;23.2.8568313"
           echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
           echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
-          mkdir -p "$HOME/.config/godot"
+
+      - name: Download Godot 4.3 and templates
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/godot" /tmp/godot-templates
+          cd "$HOME/godot"
+          curl -fL -o godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -oq godot.zip
+          chmod +x Godot_v4.3-stable_linux.x86_64
+          curl -fL -o templates.tpz https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          unzip -oq templates.tpz -d /tmp/godot-templates
+          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
+          cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.3.stable/"
+
+      - name: Configure Android export
+        shell: bash
+        run: |
+          set -euo pipefail
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/.android/sdk}}"
+          mkdir -p "$HOME/.android" "$HOME/.config/godot"
+          keytool -genkeypair -noprompt -keystore "$HOME/.android/debug.keystore" -storepass android -alias androiddebugkey -keypass android -keyalg RSA -keysize 2048 -validity 10000 -dname "CN=Android Debug,O=Android,C=US"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.android/debug.keystore" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
+          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
           cat > "$HOME/.config/godot/editor_settings-4.tres" <<EOF
           config_version=5
           [resource]
@@ -68,30 +74,12 @@ jobs:
           set -euo pipefail
           "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --editor --path . --quit
 
-      - name: Configure Android debug signing
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$HOME/.android"
-          if [ ! -f "$HOME/.android/debug.keystore" ]; then
-            keytool -genkeypair -noprompt \
-              -keystore "$HOME/.android/debug.keystore" \
-              -storepass android \
-              -alias androiddebugkey \
-              -keypass android \
-              -keyalg RSA -keysize 2048 -validity 10000 \
-              -dname "CN=Android Debug,O=Android,C=US"
-          fi
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.android/debug.keystore" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
-          echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
-
       - name: Export debug APK
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p builds
-          "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --path . --verbose --export-debug "Android" builds/NeonBeat-debug.apk
+          "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --verbose --path . --export-debug "Android" builds/NeonBeat-debug.apk
           test -s builds/NeonBeat-debug.apk
 
       - name: Upload APK

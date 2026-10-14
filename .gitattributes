@@ -9,3 +9,4 @@
 *.wav binary
 *.ttf binary
 *.otf binary
+*.glb filter=lfs diff=lfs merge=lfs -text

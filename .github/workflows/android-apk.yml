@@ -11,120 +11,91 @@ permissions:
 jobs:
   build-apk:
     runs-on: ubuntu-22.04
+    container:
+      image: barichello/godot-ci:4.3
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v5
-        with:
-          distribution: temurin
-          java-version: '17'
-
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v4
-
-      - name: Install Android SDK packages
+      - name: Setup
         shell: bash
         run: |
           set -euo pipefail
-          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/.android/sdk}}"
-          mkdir -p "$SDK"
-          yes | sdkmanager --sdk_root="$SDK" --licenses >/dev/null || true
-          # NDK/cmake not required for prebuilt android_debug.apk template export
-          sdkmanager --sdk_root="$SDK" \
-            "platform-tools" "platforms;android-34" "build-tools;34.0.0" \
-            "cmdline-tools;latest"
-          echo "ANDROID_HOME=$SDK" >> "$GITHUB_ENV"
-          echo "ANDROID_SDK_ROOT=$SDK" >> "$GITHUB_ENV"
-
-      - name: Download Godot 4.3 and templates
-        shell: bash
-        run: |
-          set -euo pipefail
-          mkdir -p "$HOME/godot" /tmp/godot-templates
-          cd "$HOME/godot"
-          curl -fL -o godot.zip https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
-          unzip -oq godot.zip
-          chmod +x Godot_v4.3-stable_linux.x86_64
-          curl -fL -o templates.tpz https://github.com/godotengine/godot/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
-          unzip -oq templates.tpz -d /tmp/godot-templates
-          mkdir -p "$HOME/.local/share/godot/export_templates/4.3.stable"
-          cp -a /tmp/godot-templates/templates/. "$HOME/.local/share/godot/export_templates/4.3.stable/"
-
-      - name: Configure Android export
-        shell: bash
-        run: |
-          set -euo pipefail
-          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/.android/sdk}}"
-          mkdir -p "$HOME/.android" "$HOME/.config/godot"
-          keytool -genkeypair -noprompt \
-            -keystore "$HOME/.android/debug.keystore" \
-            -storepass android -alias androiddebugkey -keypass android \
-            -keyalg RSA -keysize 2048 -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US"
+          mkdir -p ~/.local/share/godot/export_templates
+          if [ -d /root/.local/share/godot/export_templates/4.3.stable ]; then
+            ln -sfn /root/.local/share/godot/export_templates/4.3.stable \
+              ~/.local/share/godot/export_templates/4.3.stable
+          else
+            ls -la /root/.local/share/godot/export_templates/ || true
+            SRC=$(find /root/.local/share/godot/export_templates -maxdepth 1 -type d -name '4.3*' 2>/dev/null | head -1 || true)
+            if [ -n "${SRC:-}" ]; then
+              ln -sfn "$SRC" ~/.local/share/godot/export_templates/4.3.stable
+            fi
+          fi
+          ls -la ~/.local/share/godot/export_templates/ || true
+          mkdir -p ~/.android
+          if [ ! -f ~/.android/debug.keystore ]; then
+            keytool -genkeypair -noprompt \
+              -keystore ~/.android/debug.keystore \
+              -storepass android -alias androiddebugkey -keypass android \
+              -keyalg RSA -keysize 2048 -validity 10000 \
+              -dname "CN=Android Debug,O=Android,C=US"
+          fi
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PATH=$HOME/.android/debug.keystore" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_USER=androiddebugkey" >> "$GITHUB_ENV"
           echo "GODOT_ANDROID_KEYSTORE_DEBUG_PASSWORD=android" >> "$GITHUB_ENV"
-          # Write EditorSettings without breaking YAML indentation (no column-0 heredoc)
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/lib/android-sdk}}"
+          JAVA="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"
+          mkdir -p ~/.config/godot
           {
             echo '[gd_resource type="EditorSettings" format=3]'
             echo
             echo '[resource]'
             echo "export/android/android_sdk_path = \"$SDK\""
-            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/java_sdk_path = \"$JAVA\""
             echo "export/android/debug_keystore = \"$HOME/.android/debug.keystore\""
             echo 'export/android/debug_keystore_user = "androiddebugkey"'
             echo 'export/android/debug_keystore_pass = "android"'
-          } > "$HOME/.config/godot/editor_settings-4.3.tres"
-          cp "$HOME/.config/godot/editor_settings-4.3.tres" "$HOME/.config/godot/editor_settings-4.tres"
-          echo "=== editor_settings-4.3.tres ==="
-          cat "$HOME/.config/godot/editor_settings-4.3.tres"
-          echo "=== SDK check ==="
-          ls -la "$SDK/platform-tools" "$SDK/build-tools" 2>&1 | head -20
-          test -d "$SDK/platform-tools"
-          test -d "$SDK/build-tools"
-
-      - name: Validate project
-        shell: bash
-        run: |
-          set -euo pipefail
-          "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --editor --path . --quit || true
-          # Import assets so project settings are fully applied
-          "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --path . --import || true
-          # Confirm ETC2 flag is present (required for Android on Linux hosts)
-          grep -q 'import_etc2_astc=true' project.godot
+          } > ~/.config/godot/editor_settings-4.3.tres
+          cp ~/.config/godot/editor_settings-4.3.tres ~/.config/godot/editor_settings-4.tres
+          echo "SDK=$SDK JAVA=$JAVA"
+          ls -la "$SDK/platform-tools" 2>/dev/null | head -5 || true
 
       - name: Export debug APK
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p builds
-          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/.android/sdk}}"
-          # Godot's validate/editor step overwrites EditorSettings — rewrite SDK paths now
-          mkdir -p "$HOME/.config/godot"
+          grep -q 'import_etc2_astc=true' project.godot
+          GODOT_BIN=$(command -v godot || command -v Godot || true)
+          if [ -z "$GODOT_BIN" ]; then
+            GODOT_BIN=$(find /usr /opt /root -name 'Godot*' -type f 2>/dev/null | head -1 || true)
+          fi
+          echo "Using Godot: $GODOT_BIN"
+          "$GODOT_BIN" --version || true
+          "$GODOT_BIN" --headless --path . --import || true
+          SDK="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/lib/android-sdk}}"
+          JAVA="${JAVA_HOME:-/usr/lib/jvm/java-17-openjdk-amd64}"
+          mkdir -p ~/.config/godot
           {
             echo '[gd_resource type="EditorSettings" format=3]'
             echo
             echo '[resource]'
             echo "export/android/android_sdk_path = \"$SDK\""
-            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/java_sdk_path = \"$JAVA\""
             echo "export/android/debug_keystore = \"$HOME/.android/debug.keystore\""
             echo 'export/android/debug_keystore_user = "androiddebugkey"'
             echo 'export/android/debug_keystore_pass = "android"'
-          } > "$HOME/.config/godot/editor_settings-4.3.tres"
-          cp "$HOME/.config/godot/editor_settings-4.3.tres" "$HOME/.config/godot/editor_settings-4.tres"
-          echo "Templates:"; ls -la "$HOME/.local/share/godot/export_templates/4.3.stable/" | head -20
-          echo "Java:"; ls -la "$JAVA_HOME/bin/java"
-          echo "SDK:"; ls -la "$SDK/platform-tools/adb" "$SDK/build-tools" | head
+          } > ~/.config/godot/editor_settings-4.3.tres
+          cp ~/.config/godot/editor_settings-4.3.tres ~/.config/godot/editor_settings-4.tres
           set +e
-          "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --verbose --path . \
+          "$GODOT_BIN" --headless --verbose --path . \
             --export-debug "Android" builds/NeonBeat-debug.apk 2>&1 | tee /tmp/godot-export.log
           STATUS=${PIPESTATUS[0]}
           set -e
           if [ ! -s builds/NeonBeat-debug.apk ]; then
-            echo "::error::APK export failed (exit=$STATUS). Last 100 log lines:"
-            tail -n 100 /tmp/godot-export.log || true
+            echo "::error::APK export failed (exit=$STATUS). Log:"
+            tail -n 120 /tmp/godot-export.log || true
             exit 1
           fi
           ls -lh builds/NeonBeat-debug.apk

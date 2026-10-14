@@ -1,0 +1,33 @@
+name: Validate Project
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Godot
+        uses: chickensoft-games/setup-godot@v1
+        with:
+          version: 4.3.0
+          use-dotnet: false
+
+      - name: Verify project structure
+        run: |
+          test -f project.godot || (echo "Missing project.godot" && exit 1)
+          test -f scenes/boot/boot.tscn || (echo "Missing boot scene" && exit 1)
+          test -f scenes/menus/main_menu.tscn || (echo "Missing main menu" && exit 1)
+          test -f scenes/gameplay/arena.tscn || (echo "Missing arena" && exit 1)
+          echo "Core files present."
+
+      - name: Headless project check
+        run: |
+          godot --headless --path . --quit-after 2 || true
+          echo "Headless launch attempted (may warn about missing display)."

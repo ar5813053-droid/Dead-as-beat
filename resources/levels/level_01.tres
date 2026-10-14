@@ -1,0 +1,6 @@
+; Placeholder level resource – future data-driven levels will use this format.
+; Currently arena.tscn hardcodes the first level parameters.
+
+[gd_resource type="Resource" format=3]
+
+[resource]

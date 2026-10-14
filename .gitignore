@@ -1,0 +1,28 @@
+# Godot 4
+.godot/
+*.translation
+export/
+*.apk
+*.aab
+*.so
+*.jar
+*.keystore
+*.jks
+.import/
+*.import
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+*~
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Build artifacts
+builds/
+*.log
+android_build/

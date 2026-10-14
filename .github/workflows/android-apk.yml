@@ -88,21 +88,42 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --editor --path . --quit
+          "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --editor --path . --quit || true
+          # Import assets so project settings are fully applied
+          "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --path . --import || true
+          # Confirm ETC2 flag is present (required for Android on Linux hosts)
+          grep -q 'import_etc2_astc=true' project.godot
 
       - name: Export debug APK
         shell: bash
         run: |
           set -euo pipefail
           mkdir -p builds
+          SDK="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-$HOME/.android/sdk}}"
+          # Godot's validate/editor step overwrites EditorSettings — rewrite SDK paths now
+          mkdir -p "$HOME/.config/godot"
+          {
+            echo '[gd_resource type="EditorSettings" format=3]'
+            echo
+            echo '[resource]'
+            echo "export/android/android_sdk_path = \"$SDK\""
+            echo "export/android/java_sdk_path = \"$JAVA_HOME\""
+            echo "export/android/debug_keystore = \"$HOME/.android/debug.keystore\""
+            echo 'export/android/debug_keystore_user = "androiddebugkey"'
+            echo 'export/android/debug_keystore_pass = "android"'
+          } > "$HOME/.config/godot/editor_settings-4.3.tres"
+          cp "$HOME/.config/godot/editor_settings-4.3.tres" "$HOME/.config/godot/editor_settings-4.tres"
+          echo "Templates:"; ls -la "$HOME/.local/share/godot/export_templates/4.3.stable/" | head -20
+          echo "Java:"; ls -la "$JAVA_HOME/bin/java"
+          echo "SDK:"; ls -la "$SDK/platform-tools/adb" "$SDK/build-tools" | head
           set +e
           "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --verbose --path . \
             --export-debug "Android" builds/NeonBeat-debug.apk 2>&1 | tee /tmp/godot-export.log
           STATUS=${PIPESTATUS[0]}
           set -e
           if [ ! -s builds/NeonBeat-debug.apk ]; then
-            echo "::error::APK export failed (exit=$STATUS). Last 80 log lines:"
-            tail -n 80 /tmp/godot-export.log || true
+            echo "::error::APK export failed (exit=$STATUS). Last 100 log lines:"
+            tail -n 100 /tmp/godot-export.log || true
             exit 1
           fi
           ls -lh builds/NeonBeat-debug.apk

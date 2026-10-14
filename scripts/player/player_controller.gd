@@ -131,7 +131,7 @@ func _perform_attack() -> void:
 	attack_performed.emit(quality)
 	if quality == "perfect":
 		GameState.add_combo()
-	elif quality in ("early", "late"):
+	elif quality in ["early", "late"]:
 		GameState.add_combo()
 	else:
 		GameState.break_combo()

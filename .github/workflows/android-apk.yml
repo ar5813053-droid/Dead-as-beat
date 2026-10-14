@@ -91,7 +91,7 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p builds
-          "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --path . --export-debug "Android" builds/NeonBeat-debug.apk
+          "$HOME/godot/Godot_v4.3-stable_linux.x86_64" --headless --path . --verbose --export-debug "Android" builds/NeonBeat-debug.apk
           test -s builds/NeonBeat-debug.apk
 
       - name: Upload APK
